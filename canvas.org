@@ -9,3 +9,122 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. 
 
+* Goal
+
+This program contains elisp functions to interact with canvas.  It is based on the Canvas API Documentation at https://www.canvas.instructure.com/doc/api/index.html.
+
+There are two main functions:
+
+- ~canvas-act-on-subtree~ :: When called from a subtree, do the right thing.  The exact behaviour depends on certain properties of the subtree.  The most common use is to export the contents of the subtree as HTML and copy them to canvas either as a page, a discussion topic, or an announcement.
+
+- ~canvas-upload-file-at-point~ :: When called from dired, upload the file at point to canvas.  It will be placed in the same directory tree relative to the base url as it is locally relative to the local base directory.
+
+To use it, evaluate canvas.el and set the information described in the next section appropriately.  
+
+* Basic set-up for access and authorisation
+
+The variable ~canvas-base-url~ contains the base url of your canvas page.  In my case, it is of the form https://canvas.anu.edu.au/api/v1/courses/xxxx/ (where x is a digit).
+
+#+begin_src elisp :tangle canvas.el
+  (defvar canvas-base-url "https://canvas.anu.edu.au/api/v1/courses/xxxx/"
+  "The base url of the course for the canvas API")
+#+end_src
+
+To allow this program to access the course page, it needs an authorisation token.  My authorisation token is stored in the file \~/.local/canvas_token.  Read it and store it in the variable ~canvas-authorization-token~.
+
+#+begin_src elisp :tangle canvas.el
+   (defvar canvas-authorization-token
+     (with-temp-buffer
+       (insert-file-contents "~/.local/canvas_token")
+       (buffer-string))
+     "Authorization token for canvas")
+#+end_src
+
+Set the directory on the local computer that has the course materials. 
+
+#+begin_src elisp :tangle canvas.el
+(defvar canvas-local-base-diretory
+  (expand-file-name "~/Documents/teaching/your-course-name")
+  "Local base directory")
+#+end_src
+
+The program will send useful messages to a buffer.  Set the name of this buffer.
+#+begin_src elisp :tangle canvas.el
+  (defvar canvas-log-buffer-name
+    "*canvas log*"
+    "Buffer name for canvas log")
+#+end_src
+
+* Helper functions
+
+Begin with a useful logging function.
+#+begin_src elisp :tangle canvas.el
+  (defun canvas--log (object)
+    "Construct a string represetation of the object and write the string to the log buffer."
+    (with-current-buffer (get-buffer-create canvas-log-buffer-name)
+      (end-of-buffer)
+      (print object (current-buffer))
+      ))
+#+end_src
+
+The following is an error handler as required for the request.el library.
+It logs the error-thrown and data to the log buffer and shows a message. 
+#+begin_src elisp :tangle canvas.el
+  (cl-defun canvas--generic-error-handler (&key data &key error-thrown &allow-other-keys)
+    (canvas--log error-thrown)
+    (canvas--log data)
+    (message "Error!  See the canvas log buffer"))
+#+end_src
+
+Likewise, the following is a success handler.
+It logs the data, but it also sets the "canvas__id" property of the subtree.
+With the id set, the program now knows that the subtree corresponds to the object on the canvas website indexed by this id.
+#+begin_src elisp :tangle canvas.el
+  (cl-defun canvas--generic-success-handler (&key data &allow-other-keys)
+    (canvas--log data)
+    (when-let* ((id (assoc-default 'id data)))
+      (org-set-property "canvas__id" (format "%s" id)))
+    (message "Success.  See canvas log buffer for return data."))
+#+end_src
+
+The following is a success handler used for "GET" actions.
+In addition to logging, it reads the given ~data~ and transcribes it into properties of the subtree with names starting with "canvas_".  For example, if ~data~ contains the key-value pair (foo . bar), our subtree will get the property ":canvas_foo: bar".
+#+begin_src elisp :tangle canvas.el
+  (cl-defun canvas--dump-properties (&key data &allow-other-keys)
+    (message "Get success.")
+    (canvas--log (print data))
+    (dolist (kv data)
+      (org-set-property (format "canvas_%s" (car kv))
+  		      (string-replace "\n" "\\n" (format "%s" (cdr kv))))))
+#+end_src
+
+Canvas needs ISO 8601 timestamps.  I do not want to write ISO 8601 timestamps.  
+#+begin_src elisp :tangle canvas.el
+  (defun canvas-time (timestamp)
+    "Format org mode time stamp as ISO 8601"
+    (format-time-string  "%FT%T" (date-to-time timestamp)))
+#+end_src
+
+A function to return the contents of the file as a string.  I am not sure why such a function does not already exist.
+#+begin_src elisp :tangle canvas.el
+  (defun canvas-get-file (filename)
+    "Return the contents of the file as a string."
+    (with-temp-buffer
+      (insert-file-contents filename)
+      (buffer-string)))
+#+end_src
+
+Functions to return the title and body (converted to html) of the current subtree.
+#+begin_src elisp :tangle canvas.el
+  (defun canvas-get-title ()
+    "Get title from ITEM"
+    (org-entry-get nil "ITEM"))
+
+  (defun canvas-get-entry-as-html ()
+    "Return the body of the subtree as an html string"
+    (let ((temp-file (make-temp-file "canvas-html")))
+      (org-export-to-file 'html temp-file nil t nil t)
+      (with-temp-buffer
+        (insert-file-contents temp-file)
+        (buffer-string))))
+#+end_src
