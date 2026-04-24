@@ -1,1 +1,0 @@
-/home/anandrd/code/canvas.el/canvas.org
