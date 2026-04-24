@@ -19,7 +19,7 @@ There are two main functions:
 
 - ~canvas-upload-file-at-point~ :: When called from dired, upload the file at point to canvas.  It will be placed in the same directory tree relative to the base url as it is locally relative to the local base directory.
 
-To use it, evaluate canvas.el and set the information described in the next section appropriately.  
+To use it, set the variables described in the next section appropriately and then evaluate canvas.el.  
 
 * Basic set-up for access and authorisation
 
