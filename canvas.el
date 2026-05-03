@@ -1,4 +1,4 @@
-(defvar canvas-base-url "https://canvas.anu.edu.au/api/v1/courses/xxxx/"
+(defvar canvas-base-url "https://canvas.myuni.edu/api/v1/courses/xxxx/"
 "The base url of the course for the canvas API")
 
 (defvar canvas-authorization-token

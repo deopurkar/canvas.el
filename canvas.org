@@ -78,7 +78,7 @@ In a dired buffer, I put point on a file name
   -rw-r--r-- 1 anandrd anandrd 159K Apr 22 22:01 workshop06.pdf
   ...
 #+end_example
-and call ~canvas-upload-file-at-point~.  I get a message in the minibuffer "Upload success.  URL in kill ring." and on top of my kill ring is a URL like "https://canvas.anu.edu.au/files/1668129/download?download_frd=1&verifier=some-long-gibberish-string"  The file is uploaded to a folder called "workshops" on my canvas site and the url above is a direct link to download that file.
+and call ~canvas-upload-file-at-point~.  I get a message in the minibuffer "Upload success.  URL in kill ring." and on top of my kill ring is a URL like "https://canvas.myuni.edu/files/1668129/download?download_frd=1&verifier=some-long-gibberish-string"  The file is uploaded to a folder called "workshops" on my canvas site and the url above is a direct link to download that file.
 
 ** More possibilities
 One can use the main function ~canvas-act-on-subtree~ to basically issue an arbitrary request with arbitrary data to an arbitrary url.  So, one should be able to use it quite flexibly.  
@@ -88,10 +88,10 @@ One can use the main function ~canvas-act-on-subtree~ to basically issue an arbi
 :ID:       d056ae07-74cc-4ea8-a9aa-5c31a5254a23
 :END:
 
-The variable ~canvas-base-url~ contains the base url of your canvas page.  In my case, it is of the form https://canvas.anu.edu.au/api/v1/courses/xxxx/ (where x is a digit).
+The variable ~canvas-base-url~ contains the base url of your canvas page.  In my case, it is of the form https://canvas.myuni.edu/api/v1/courses/xxxx/ (where x is a digit).
 
 #+begin_src elisp
-  (defvar canvas-base-url "https://canvas.anu.edu.au/api/v1/courses/xxxx/"
+  (defvar canvas-base-url "https://canvas.myuni.edu/api/v1/courses/xxxx/"
   "The base url of the course for the canvas API")
 #+end_src
 
