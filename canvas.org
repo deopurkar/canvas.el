@@ -1,5 +1,6 @@
 #+title: Canvas.el
 #+author: Anand Deopurkar
+#+property: header-args :tangle canvas.el
 
 Copyright 2026 Anand Deopurkar
 
@@ -19,20 +20,81 @@ There are two main functions:
 
 - ~canvas-upload-file-at-point~ :: When called from dired, upload the file at point to canvas.  It will be placed in the same directory tree relative to the base url as it is locally relative to the local base directory.
 
-To use it, set the variables described in the next section appropriately and then evaluate canvas.el.  
+* Examples of use
+These examples assume that ~canvas-base-url~, ~canvas-authorization-token~, and ~canvas-local-base-directory~ are set as described in the next section ([[id:d056ae07-74cc-4ea8-a9aa-5c31a5254a23][Basic set-up for access and authorisation]]).
+
+** Updating an existing page
+I have a home page for my algebra course on canvas at "pages/algebra".  I also have the following subtree on my local computer.  
+#+begin_example
+* Algebra course home page
+:PROPERTIES:
+:canvas__action: PUT
+:canvas__url: pages/algebra
+:canvas_wiki_page[body]: (canvas-get-entry-as-html)
+:canvas_wiki_page[title]: (canvas-get-title)
+:EXPORT_OPTIONS: num:0
+:END:
+... (stuff) ....
+#+end_example
+Calling ~canvas-act-on-subtree~ here will update the title and body of the canvas page with the title ("Algebra course home page") and body of the subtree ("...(stuff)..." exported to html).  
+
+Make changes to the subtree and call ~canvas-act-on-subtree~ again.  The canvas page gets updated.  Voila!
+
+** Posting a new announcement
+I have the following subtree.
+#+begin_example
+** Welcome to Algebra.
+:PROPERTIES:
+:canvas__url: discussion_topics
+:canvas_message: (canvas-get-entry-as-html)
+:canvas_title: (canvas-get-title)
+:canvas_is_announcement: 1
+:canvas_delayed_post_at: (canvas-time "[2026-02-23 Mon 12:00]")
+:END:
+.... (stuff) ....
+#+end_example
+I call ~canvas-act-on-subtree~ and an announcement is created on canvas; it will be posted at the indicated time.  The subtree is updated with an additional property ~canvas__id~, as follows.
+
+#+begin_example
+** Welcome to Algebra!
+:PROPERTIES:
+:canvas__url: discussion_topics
+:canvas_message: (canvas-get-entry-as-html)
+:canvas_title: (canvas-get-title)
+:canvas_is_announcement: 1
+:canvas_delayed_post_at: (canvas-time "[2026-02-23 Mon 12:00]")
+:canvas__id: 31535
+.... (updated stuff) ....
+#+end_example
+I make changes and call ~canvas-act-on-subtree~ again.  The canvas announcement is updated.  Voila! 
+
+Posting and updating a discussion topic works the same way.  We just do not set ~canvas_is_announcement~ to 1 (or set it to 0).  
+
+** Uploading a file
+In a dired buffer, I put point on a file name
+#+begin_example
+  $HOME/Documents/teaching/algebra/workshops:
+  ...
+  -rw-r--r-- 1 anandrd anandrd 159K Apr 22 22:01 workshop06.pdf
+  ...
+#+end_example
+and call ~canvas-upload-file-at-point~.  I get a message in the minibuffer "Upload success.  URL in kill ring." and on top of my kill ring is a URL like "https://canvas.anu.edu.au/files/1668129/download?download_frd=1&verifier=some-long-gibberish-string"  The file is uploaded to a folder called "workshops" on my canvas site and the url abev is a direct link to download that file.
 
 * Basic set-up for access and authorisation
+:PROPERTIES:
+:ID:       d056ae07-74cc-4ea8-a9aa-5c31a5254a23
+:END:
 
 The variable ~canvas-base-url~ contains the base url of your canvas page.  In my case, it is of the form https://canvas.anu.edu.au/api/v1/courses/xxxx/ (where x is a digit).
 
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (defvar canvas-base-url "https://canvas.anu.edu.au/api/v1/courses/xxxx/"
   "The base url of the course for the canvas API")
 #+end_src
 
-To allow this program to access the course page, it needs an authorisation token.  My authorisation token is stored in the file \~/.local/canvas_token.  Read it and store it in the variable ~canvas-authorization-token~.
+To allow this program to access the course page, it needs an authorisation token.  My authorisation token is stored in the file $HOME/.local/canvas_token.  Read it and store it in the variable ~canvas-authorization-token~.
 
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
    (defvar canvas-authorization-token
      (with-temp-buffer
        (insert-file-contents "~/.local/canvas_token")
@@ -42,23 +104,23 @@ To allow this program to access the course page, it needs an authorisation token
 
 Set the directory on the local computer that has the course materials. 
 
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
 (defvar canvas-local-base-diretory
   (expand-file-name "~/Documents/teaching/your-course-name")
   "Local base directory")
 #+end_src
 
 The program will send useful messages to a buffer.  Set the name of this buffer.
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (defvar canvas-log-buffer-name
     "*canvas log*"
     "Buffer name for canvas log")
 #+end_src
 
 * Helper functions
-
+** Logging
 Begin with a useful logging function.
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (defun canvas--log (object)
     "Construct a string represetation of the object and write the string to the log buffer."
     (with-current-buffer (get-buffer-create canvas-log-buffer-name)
@@ -66,10 +128,10 @@ Begin with a useful logging function.
       (print object (current-buffer))
       ))
 #+end_src
-
+** Failure and success handlers
 The following is an error handler as required for the request.el library.
 It logs the error-thrown and data to the log buffer and shows a message. 
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (cl-defun canvas--generic-error-handler (&key data &key error-thrown &allow-other-keys)
     (canvas--log error-thrown)
     (canvas--log data)
@@ -79,7 +141,7 @@ It logs the error-thrown and data to the log buffer and shows a message.
 Likewise, the following is a success handler.
 It logs the data, but it also sets the "canvas__id" property of the subtree.
 With the id set, the program now knows that the subtree corresponds to the object on the canvas website indexed by this id.
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (cl-defun canvas--generic-success-handler (&key data &allow-other-keys)
     (canvas--log data)
     (when-let* ((id (assoc-default 'id data)))
@@ -89,7 +151,7 @@ With the id set, the program now knows that the subtree corresponds to the objec
 
 The following is a success handler used for "GET" actions.
 In addition to logging, it reads the given ~data~ and transcribes it into properties of the subtree with names starting with "canvas_".  For example, if ~data~ contains the key-value pair (foo . bar), our subtree will get the property ":canvas_foo: bar".
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (cl-defun canvas--dump-properties (&key data &allow-other-keys)
     (message "Get success.")
     (canvas--log (print data))
@@ -98,15 +160,16 @@ In addition to logging, it reads the given ~data~ and transcribes it into proper
   		      (string-replace "\n" "\\n" (format "%s" (cdr kv))))))
 #+end_src
 
+** Conversions
 Canvas needs ISO 8601 timestamps.  I do not want to write ISO 8601 timestamps.  
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (defun canvas-time (timestamp)
     "Format org mode time stamp as ISO 8601"
     (format-time-string  "%FT%T" (date-to-time timestamp)))
 #+end_src
 
 A function to return the contents of the file as a string.  I am not sure why such a function does not already exist.
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (defun canvas-get-file (filename)
     "Return the contents of the file as a string."
     (with-temp-buffer
@@ -115,7 +178,7 @@ A function to return the contents of the file as a string.  I am not sure why su
 #+end_src
 
 Functions to return the title and body (converted to html) of the current subtree.
-#+begin_src elisp :tangle canvas.el
+#+begin_src elisp
   (defun canvas-get-title ()
     "Get title from ITEM"
     (org-entry-get nil "ITEM"))
@@ -128,3 +191,136 @@ Functions to return the title and body (converted to html) of the current subtre
         (insert-file-contents temp-file)
         (buffer-string))))
 #+end_src
+
+The following function applied to subtree looks at properties of the form ~canvas_foo: bar~ and converts it to the key value pair ~(foo . bar)~.  It returns the list of all such key value pairs.  If ~bar~ is an S-expression, then it is evaluated first and the value in the key value pair is the return value.
+#+begin_src elisp
+(defun canvas--construct-data ()
+  (let ((data nil))
+    (dolist (kv (org-entry-properties nil 'standard))
+      (message (car kv))
+      (when-let* ((key (and (string-match "^canvas_\\(.*\\)" (car kv))
+			    (match-string-no-properties 1 (car kv))))
+		  (val (cdr kv)))
+	(push (cons (downcase key)
+		    (if (listp (read val)) ;; if S-expression
+			(eval (read val))  ;; evaluate
+		      val))                ;; else as-is
+	      data)))
+    data))
+#+end_src
+
+* The main function
+
+The following function called on a subtree takes an appropriate action on the subtree.
+
+The default action is POST to the url indicated by the property ~canvas__url~.  If ~canvas__url~ is not set, do nothing.  
+
+All properties of the form ~canvas_PROP~ are sent as data (S-expressions are evaluated). 
+
+If ~canvas__id~ is set, then it is appended to ~canvas__url~ and the request is ~PUT~ instead of ~POST~.  This has the effect of updating canvas.  If ~canvas__action~ is set to ~DELETE~ or ~GET~, then the properties are ignored and a ~DELETE~ or ~GET~ is issued.
+
+#+begin_src elisp
+(defun canvas-act-on-subtree ()
+  "The default action is POST to the url indicated by the property canvas__url.  If this property is nil, do nothing.  All properties of the form canvas_PROP are sent as data. If canvas__id is set, then it is appended to canvas__url and the request is PUT instead of POST.  This has the effect of updating canvas.  If canvas__action is set to DELETE or GET, then the properties are ignored and a DELETE or GET is issued."
+  (interactive)
+  (let ((full-url (org-entry-get nil "canvas__full_url"))
+	(url (org-entry-get nil "canvas__url"))
+	(id (org-entry-get nil "canvas__id"))
+	(action (org-entry-get nil "canvas__action"))
+	(data nil))
+    (if (and (not full-url) (not url))
+	(message "No canvas URL.  Doing nothing.")
+      (setq url (or full-url
+		    (if id
+			(format "%s%s/%s" canvas-base-url url id)
+		      (format "%s%s" canvas-base-url url))))
+      (canvas--log (format "URL: %s" url))
+      (setq action (or action
+		       (and id "PUT")
+		       "POST"))
+      (canvas--log (format "Action: %s" action))
+      (when (member (upcase action) '("PUT" "POST"))
+	(setq data (canvas--construct-data))
+	(canvas--log (format "Data: %s" data)))
+      (if (y-or-n-p (format "%s at %s?" action url))
+	  (request url
+	    :type action
+	    :headers `(("Authorization" . ,(concat "Bearer " canvas-authorization-token)))
+	    :parser 'json-read
+	    :data data
+	    :error 'canvas--generic-error-handler
+	    :success (if-let* ((given (org-entry-get nil "canvas__success_handler")))
+			 (eval (read given))
+		       (if (member action '("GET" "DELETE"))
+			   'canvas--dump-properties
+			 'canvas--generic-success-handler)))
+	(message "Aborted.")
+	))))
+#+end_src
+
+* File upload
+** Main function
+Upload the file at point.
+The upload location is the same as the local location relative to the local base directory.
+
+The function issues a ~POST~ request with the correct ~DATA~.  If this succeeds, the response contains an intermediate url that we need to visit to complete the upload.  This second part of the process is done by the upload-handler defined later.  When the second part is completed successfully, the final upload url is copied to the kill ring. 
+#+begin_src elisp
+  (defun canvas-upload-file-at-point ()
+    "Upload the file at point.
+     The location is the same as the local location relative to the local base directory."
+  (interactive)
+  (when-let* ((full-filename
+  	       (or (and (derived-mode-p 'dired-mode)
+  			(dired-get-filename))
+  		   (thing-at-point 'existing-filename))))
+    (let* ((base-relative-filename
+  	    (file-relative-name full-filename canvas-local-base-diretory))
+  	   (filename (file-name-nondirectory base-relative-filename))
+  	   (folder (file-name-directory base-relative-filename)))
+      (canvas--log (format "Uploading %s in folder %s." filename folder))
+      (request (concat canvas-base-url "files")
+  	:type "POST"
+  	:data `((name . ,filename)
+  		(parent_folder_path . ,folder))
+  	:parser 'json-read
+  	:headers 
+  	`(("Authorization" . ,(concat "Bearer " canvas-authorization-token)))
+  	:success (canvas--upload-handler full-filename)
+  	:error 'canvas--generic-error-handler))))
+#+end_src
+
+** Upload handler
+This handler visits the url and upload-params returned by the upload ~POST~ request.
+#+begin_src elisp
+  (defun canvas--upload-handler (filename)
+  ;; For some reason, I cannot make it work with the request.el library.
+  ;; So I am going to use straight up curl.
+  (message filename)
+  (cl-function
+   (lambda (&key data &allow-other-keys)
+     (let* ((params (assoc-default 'upload_params data))
+	    (url (assoc-default 'upload_url data))
+	    (temp-file (make-temp-file "curl")))
+       (call-process "curl"
+		     nil
+		     `((:file ,temp-file) nil)
+		     nil
+		     url
+		     (format "-F \'%s\'" (request--urlencode-alist params))
+		     (format "-F \'file=@\"%s\"\'" filename))
+       (with-current-buffer (get-buffer-create canvas-log-buffer-name)
+	 (insert-file-contents temp-file))
+       (let ((data (json-read-file temp-file)))
+	 (request (assoc-default 'location data)
+	   :type "GET"
+	   :headers
+	   `(("Authorization" . ,(concat "Bearer " canvas-authorization-token)))
+	   :parser 'json-read
+	   :success
+	   (cl-function
+	    (lambda (&key data &allow-other-keys)
+	      (kill-new (assoc-default 'url data))
+	      (message "Upload success.  URL in kill ring.")))
+	   :error 'canvas--generic-error-handler))))))
+#+end_src
+
