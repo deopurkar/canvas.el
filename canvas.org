@@ -195,7 +195,7 @@ Functions to return the title and body (converted to html) of the current subtre
         (buffer-string))))
 #+end_src
 
-The following function applied to subtree looks at properties of the form ~canvas_foo: bar~ and converts it to the key value pair ~(foo . bar)~.  It returns the list of all such key value pairs.  If ~bar~ is an S-expression, then it is evaluated first and the value in the key value pair is the return value.
+The following function applied to subtree converts a property of the form ~canvas_foo: bar~ to the key value pair ~(foo . bar)~.  It returns the list of all such key value pairs.  If ~bar~ is an S-expression, then it is evaluated first and the value in the key value pair is the return value.
 #+begin_src elisp
 (defun canvas--construct-data ()
   (let ((data nil))
