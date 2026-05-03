@@ -8,4 +8,4 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>. 
 
-The documented code is in the org file canvas.org.  Its tangled to canvas.el.
+The documented code is in the org file canvas.org.  It is tangled to canvas.el.
