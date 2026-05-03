@@ -1,4 +1,4 @@
-#+title: Canvas.el
+s#+title: Canvas.el
 #+author: Anand Deopurkar
 #+property: header-args :tangle canvas.el
 
@@ -216,7 +216,7 @@ The following function applied to subtree converts a property of the form ~canva
 
 The following function called on a subtree takes an appropriate action on the subtree.
 
-The default action is POST to the url indicated by the property ~canvas__url~.  If ~canvas__url~ is not set, do nothing.  
+The default action is ~POST~ to the url indicated by the property ~canvas__url~.  If ~canvas__url~ is not set, do nothing.  
 
 All properties of the form ~canvas_PROP~ are sent as data (S-expressions are evaluated). 
 
