@@ -1,4 +1,4 @@
-s#+title: Canvas.el
+#+title: Canvas.el
 #+author: Anand Deopurkar
 #+property: header-args :tangle canvas.el
 
