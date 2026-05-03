@@ -26,15 +26,15 @@ These examples assume that ~canvas-base-url~, ~canvas-authorization-token~, and 
 ** Updating an existing page
 I have a home page for my algebra course on canvas at "pages/algebra".  I also have the following subtree on my local computer.  
 #+begin_example
-* Algebra course home page
-:PROPERTIES:
-:canvas__action: PUT
-:canvas__url: pages/algebra
-:canvas_wiki_page[body]: (canvas-get-entry-as-html)
-:canvas_wiki_page[title]: (canvas-get-title)
-:EXPORT_OPTIONS: num:0
-:END:
-... (stuff) ....
+ * Algebra course home page
+ :PROPERTIES:
+ :canvas__action: PUT
+ :canvas__url: pages/algebra
+ :canvas_wiki_page[body]: (canvas-get-entry-as-html)
+ :canvas_wiki_page[title]: (canvas-get-title)
+ :EXPORT_OPTIONS: num:0
+ :END:
+ ... (stuff) ....
 #+end_example
 Calling ~canvas-act-on-subtree~ here will update the title and body of the canvas page with the title ("Algebra course home page") and body of the subtree ("...(stuff)..." exported to html).  
 
@@ -43,28 +43,28 @@ Make changes to the subtree and call ~canvas-act-on-subtree~ again.  The canvas 
 ** Posting a new announcement
 I have the following subtree.
 #+begin_example
-** Welcome to Algebra.
-:PROPERTIES:
-:canvas__url: discussion_topics
-:canvas_message: (canvas-get-entry-as-html)
-:canvas_title: (canvas-get-title)
-:canvas_is_announcement: 1
-:canvas_delayed_post_at: (canvas-time "[2026-02-23 Mon 12:00]")
-:END:
-.... (stuff) ....
+ ** Welcome to Algebra.
+ :PROPERTIES:
+ :canvas__url: discussion_topics
+ :canvas_message: (canvas-get-entry-as-html)
+ :canvas_title: (canvas-get-title)
+ :canvas_is_announcement: 1
+ :canvas_delayed_post_at: (canvas-time "[2026-02-23 Mon 12:00]")
+ :END:
+ .... (stuff) ....
 #+end_example
 I call ~canvas-act-on-subtree~ and an announcement is created on canvas; it will be posted at the indicated time.  The subtree is updated with an additional property ~canvas__id~, as follows.
 
 #+begin_example
-** Welcome to Algebra!
-:PROPERTIES:
-:canvas__url: discussion_topics
-:canvas_message: (canvas-get-entry-as-html)
-:canvas_title: (canvas-get-title)
-:canvas_is_announcement: 1
-:canvas_delayed_post_at: (canvas-time "[2026-02-23 Mon 12:00]")
-:canvas__id: 31535
-.... (updated stuff) ....
+ ** Welcome to Algebra!
+ :PROPERTIES:
+ :canvas__url: discussion_topics
+ :canvas_message: (canvas-get-entry-as-html)
+ :canvas_title: (canvas-get-title)
+ :canvas_is_announcement: 1
+ :canvas_delayed_post_at: (canvas-time "[2026-02-23 Mon 12:00]")
+ :canvas__id: 31535
+ .... (updated stuff) ....
 #+end_example
 I make changes and call ~canvas-act-on-subtree~ again.  The canvas announcement is updated.  Voila! 
 
@@ -79,6 +79,9 @@ In a dired buffer, I put point on a file name
   ...
 #+end_example
 and call ~canvas-upload-file-at-point~.  I get a message in the minibuffer "Upload success.  URL in kill ring." and on top of my kill ring is a URL like "https://canvas.anu.edu.au/files/1668129/download?download_frd=1&verifier=some-long-gibberish-string"  The file is uploaded to a folder called "workshops" on my canvas site and the url abev is a direct link to download that file.
+
+** More possibilities
+One can use the main function ~canvas-act-on-subtree~ to basically issue an arbitrary request with arbitrary data to an arbitrary url.  So, one should be able to use it quite flexibly.  
 
 * Basic set-up for access and authorisation
 :PROPERTIES:
