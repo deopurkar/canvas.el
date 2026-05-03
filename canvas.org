@@ -38,7 +38,7 @@ I have a home page for my algebra course on canvas at "pages/algebra".  I also h
  :END:
  ... (stuff) ....
 #+end_example
-Calling ~canvas-act-on-subtree~ here will update the title and body of the canvas page with the title ("Algebra course home page") and body of the subtree ("...(stuff)..." exported to html).  
+Calling ~canvas-act-on-subtree~ here will update the title and the body of the canvas page with the title ("Algebra course home page") and the body of the subtree ("...(stuff)..." exported to html).  
 
 Make changes to the subtree and call ~canvas-act-on-subtree~ again.  The canvas page gets updated.  Voila!
 
