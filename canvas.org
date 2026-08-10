@@ -282,8 +282,9 @@ The function issues a ~POST~ request with the correct ~DATA~.  If this succeeds,
   	    (file-relative-name full-filename canvas-local-base-diretory))
   	   (filename (file-name-nondirectory base-relative-filename))
   	   (folder (file-name-directory base-relative-filename)))
-      (canvas--log (format "Uploading %s in folder %s." filename folder))
-      (request (concat canvas-base-url "files")
+      (if (y-or-n-p (format "Uploading %s in folder %s." filename folder))
+  	(canvas--log (format "Uploading %s in folder %s." filename folder))
+        (request (concat canvas-base-url "files")
   	:type "POST"
   	:data `((name . ,filename)
   		(parent_folder_path . ,folder))
@@ -291,7 +292,7 @@ The function issues a ~POST~ request with the correct ~DATA~.  If this succeeds,
   	:headers 
   	`(("Authorization" . ,(concat "Bearer " canvas-authorization-token)))
   	:success (canvas--upload-handler full-filename)
-  	:error 'canvas--generic-error-handler))))
+  	:error 'canvas--generic-error-handler)))))
 #+end_src
 
 ** Upload handler
