@@ -93,6 +93,8 @@ One can use the main function ~canvas-act-on-subtree~ to basically issue an arbi
 The variable ~canvas-base-url~ contains the base url of your canvas page.  In my case, it is of the form https://canvas.myuni.edu/api/v1/courses/xxxx/ (where x is a digit).
 
 #+begin_src elisp
+  ;; -*- lexical-binding: t; -*-
+
   (defvar canvas-base-url "https://canvas.myuni.edu/api/v1/courses/xxxx/"
   "The base url of the course for the canvas API")
 #+end_src
@@ -275,13 +277,13 @@ The function issues a ~POST~ request with the correct ~DATA~.  If this succeeds,
      The location is the same as the local location relative to the local base directory."
   (interactive)
   (when-let* ((full-filename
-  	       (or (and (derived-mode-p 'dired-mode)
-  			(dired-get-filename))
-  		   (thing-at-point 'existing-filename))))
+  	     (or (and (derived-mode-p 'dired-mode)
+  		      (dired-get-filename))
+  		 (thing-at-point 'existing-filename))))
     (let* ((base-relative-filename
-  	    (file-relative-name full-filename canvas-local-base-directory))
-  	   (filename (file-name-nondirectory base-relative-filename))
-  	   (folder (file-name-directory base-relative-filename)))
+  	  (file-relative-name full-filename canvas-local-base-directory))
+  	 (filename (file-name-nondirectory base-relative-filename))
+  	 (folder (file-name-directory base-relative-filename)))
       (when (y-or-n-p (format "Uploading %s in folder %s." filename folder))
         (canvas--log (format "Uploading %s in folder %s." filename folder))
         (request (concat canvas-base-url "files")

@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (defvar canvas-base-url "https://canvas.myuni.edu/api/v1/courses/xxxx/"
 "The base url of the course for the canvas API")
 
@@ -118,13 +120,13 @@
    The location is the same as the local location relative to the local base directory."
 (interactive)
 (when-let* ((full-filename
-	       (or (and (derived-mode-p 'dired-mode)
-			(dired-get-filename))
-		   (thing-at-point 'existing-filename))))
+	     (or (and (derived-mode-p 'dired-mode)
+		      (dired-get-filename))
+		 (thing-at-point 'existing-filename))))
   (let* ((base-relative-filename
-	    (file-relative-name full-filename canvas-local-base-directory))
-	   (filename (file-name-nondirectory base-relative-filename))
-	   (folder (file-name-directory base-relative-filename)))
+	  (file-relative-name full-filename canvas-local-base-directory))
+	 (filename (file-name-nondirectory base-relative-filename))
+	 (folder (file-name-directory base-relative-filename)))
     (when (y-or-n-p (format "Uploading %s in folder %s." filename folder))
       (canvas--log (format "Uploading %s in folder %s." filename folder))
       (request (concat canvas-base-url "files")
