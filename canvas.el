@@ -1,11 +1,5 @@
-;; -*- lexical-binding: t; -*-
-
-;; This program is based on the Canvas API Documentation at
-;; https://www.canvas.instructure.com/doc/api/index.html
-
-(defvar canvas-base-url
-  nil
-  "The base url of the course for the canvas API")
+(defvar canvas-base-url "https://canvas.myuni.edu/api/v1/courses/xxxx/"
+"The base url of the course for the canvas API")
 
 (defvar canvas-authorization-token
   (with-temp-buffer
@@ -13,8 +7,8 @@
     (buffer-string))
   "Authorization token for canvas")
 
-(defvar canvas-local-base-directory
-  nil
+(defvar canvas-local-base-diretory
+  (expand-file-name "~/Documents/teaching/your-course-name")
   "Local base directory")
 
 (defvar canvas-log-buffer-name
@@ -121,17 +115,18 @@
 
 (defun canvas-upload-file-at-point ()
   "Upload the file at point.
-The location is the same as the local location relative to the local base directory."
-  (interactive)
-  (when-let* ((full-filename
+   The location is the same as the local location relative to the local base directory."
+(interactive)
+(when-let* ((full-filename
 	       (or (and (derived-mode-p 'dired-mode)
 			(dired-get-filename))
 		   (thing-at-point 'existing-filename))))
-    (let* ((base-relative-filename
-	    (file-relative-name full-filename canvas-local-base-directory))
+  (let* ((base-relative-filename
+	    (file-relative-name full-filename canvas-local-base-diretory))
 	   (filename (file-name-nondirectory base-relative-filename))
 	   (folder (file-name-directory base-relative-filename)))
-      (canvas--log (format "Uploading %s in folder %s." filename folder))
+    (if (y-or-n-p (format "Uploading %s in folder %s." filename folder))
+	(canvas--log (format "Uploading %s in folder %s." filename folder))
       (request (concat canvas-base-url "files")
 	:type "POST"
 	:data `((name . ,filename)
@@ -140,28 +135,27 @@ The location is the same as the local location relative to the local base direct
 	:headers 
 	`(("Authorization" . ,(concat "Bearer " canvas-authorization-token)))
 	:success (canvas--upload-handler full-filename)
-	:error 'canvas--generic-error-handler))))
-  
+	:error 'canvas--generic-error-handler)))))
 
 (defun canvas--upload-handler (filename)
-  ;; For some reason, I cannot make it work with the request.el library.
-  ;; So I am going to use straight up curl.
-  (message filename)
-  (cl-function
-   (lambda (&key data &allow-other-keys)
-     (let* ((params (assoc-default 'upload_params data))
+;; For some reason, I cannot make it work with the request.el library.
+;; So I am going to use straight up curl.
+(message filename)
+(cl-function
+ (lambda (&key data &allow-other-keys)
+   (let* ((params (assoc-default 'upload_params data))
 	    (url (assoc-default 'upload_url data))
 	    (temp-file (make-temp-file "curl")))
-       (call-process "curl"
+     (call-process "curl"
 		     nil
 		     `((:file ,temp-file) nil)
 		     nil
 		     url
 		     (format "-F \'%s\'" (request--urlencode-alist params))
 		     (format "-F \'file=@\"%s\"\'" filename))
-       (with-current-buffer (get-buffer-create canvas-log-buffer-name)
+     (with-current-buffer (get-buffer-create canvas-log-buffer-name)
 	 (insert-file-contents temp-file))
-       (let ((data (json-read-file temp-file)))
+     (let ((data (json-read-file temp-file)))
 	 (request (assoc-default 'location data)
 	   :type "GET"
 	   :headers
@@ -173,9 +167,3 @@ The location is the same as the local location relative to the local base direct
 	      (kill-new (assoc-default 'url data))
 	      (message "Upload success.  URL in kill ring.")))
 	   :error 'canvas--generic-error-handler))))))
-  
-
-
-	    
-       
-
