@@ -7,7 +7,7 @@
     (buffer-string))
   "Authorization token for canvas")
 
-(defvar canvas-local-base-diretory
+(defvar canvas-local-base-directory
   (expand-file-name "~/Documents/teaching/your-course-name")
   "Local base directory")
 
@@ -122,11 +122,11 @@
 			(dired-get-filename))
 		   (thing-at-point 'existing-filename))))
   (let* ((base-relative-filename
-	    (file-relative-name full-filename canvas-local-base-diretory))
+	    (file-relative-name full-filename canvas-local-base-directory))
 	   (filename (file-name-nondirectory base-relative-filename))
 	   (folder (file-name-directory base-relative-filename)))
-    (if (y-or-n-p (format "Uploading %s in folder %s." filename folder))
-	(canvas--log (format "Uploading %s in folder %s." filename folder))
+    (when (y-or-n-p (format "Uploading %s in folder %s." filename folder))
+      (canvas--log (format "Uploading %s in folder %s." filename folder))
       (request (concat canvas-base-url "files")
 	:type "POST"
 	:data `((name . ,filename)
